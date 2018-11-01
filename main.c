@@ -24,19 +24,31 @@
 /* JTKJ Header files */
 #include "wireless/comm_lib.h"
 #include "wireless/address.h"
-
-#include "sensors/bmp280.h"
+#include "sensors/mpu9250.h"
 
 /* Task Stacks */
 #define STACKSIZE 2048
 Char mainTaskStack[STACKSIZE];
 Char commTaskStack[STACKSIZE];
 
+/* MPU Global variables */
+static PIN_Handle hMpuPin;
+static PIN_State MpuPinState;
+static PIN_Config MpuPinConfig[] = {
+    Board_MPU_POWER  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+    PIN_TERMINATE
+};
+
+static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
+    .pinSDA = Board_I2C0_SDA1,
+    .pinSCL = Board_I2C0_SCL1
+};
+
 /* JTKJ: Display */
 Display_Handle hDisplay;
 
 /*Enum for tracking movement state */
-enum MovementState{
+typedef enum MovementState{
 	Idle = 0,
 	StairsUp = 1,
 	StairsDown = 2,
@@ -122,11 +134,59 @@ Void commTask(UArg arg0, UArg arg1) {
 }
 
 
-Int JoonanAlgoritmi(){
+void sensorFxn(UArg arg0, UArg arg1) {
+	// INTERFACE FOR MPU9250 SENSOR
+	I2C_Handle i2cMPU;
+	I2C_Params i2cMPUParams;
+
+	float ax, ay, az, gx, gy, gz;
+
+	I2C_Params_init(&i2cMPUParams);
+	i2cMPUParams.bitRate = I2C_400kHz;
+	i2cMPUParams.custom = (uintptr_t)&i2cMPUCfg;
+
+	//MPU Open I2C
+	i2cMPU = I2C_open(Board_I2C, &i2cMPUParams);
+	if (i2cMPU == NULL) {
+		System_abort("Error Initializing I2CMPU\n");
+	}
 
 
-	return Idle;
+	//MPU Power ON
+	PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_ON);
+	Task_sleep(100000 / Clock_tickPeriod);
+	System_printf("MPU9250: Power ON\n");
+	System_flush();
+
+	// MPU9250 Setup and calibration
+	System_printf("MPU9250: Setup and calibration...\n");
+	System_flush();
+
+	mpu9250_setup(&i2cMPU);
+
+	System_printf("MPU9250: Setup and calibration OK\n");
+	System_flush();
+
+	I2C_close(i2cMPU);
+
+	while (1) {
+		//MPU Open I2C
+		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams);
+		if (i2cMPU == NULL) {
+			System_abort("Error Initializing I2CMPU\n");
+		}
+
+		//Accelerometer values: ax,ay,az
+		mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
+
+		I2C_close(i2cMPU);
+
+		printf("x: %f, y: %f, z: %f\n", ax, ay, az);
+
+		Task_sleep(1000 / Clock_tickPeriod);
+	}
 }
+
 
 Void DrawMovementState(void){
 
@@ -159,17 +219,7 @@ Void DrawMovementState(void){
 	}
 }
 
-Void mainTask(UArg arg0, UArg arg1) {
-
-    I2C_Handle      i2c;
-    I2C_Params      i2cParams;
-
-    I2C_Params_init(&i2cParams);
-    i2cParams.bitRate = I2C_400kHz;
-    i2c = I2C_open(Board_I2C0, &i2cParams);
-    if (i2c == NULL) {
-        System_abort("Error Initializing I2C\n");
-    }
+Void displayTask(UArg arg0, UArg arg1) {
 
     Display_Params displayParams;
 	displayParams.lineClearMode = DISPLAY_CLEAR_BOTH;
@@ -180,14 +230,12 @@ Void mainTask(UArg arg0, UArg arg1) {
         System_abort("Error initializing Display\n");
     }
 
-    DrawMovementState();
 
     while (1) {
 
-    	// JTKJ: MAYBE READ BMP280 SENSOR DATA HERE?
+		DrawMovementState();
 
-    	// JTKJ: Do not remove sleep-call from here!
-    	Task_sleep(1000000 / Clock_tickPeriod);
+    	Task_sleep(100000 / Clock_tickPeriod);
     }
 }
 
@@ -195,6 +243,8 @@ Int main(void) {
 
 	Task_Handle hMainTask;
 	Task_Params mainTaskParams;
+	Task_Handle hDisplayTask;
+	Task_Params displayTaskParams;
 	Task_Handle hCommTask;
 	Task_Params commTaskParams;
 
@@ -218,14 +268,29 @@ Int main(void) {
 		System_abort("Error registering led button callback function");
 	}
 
-    /*Init Main Task */
+    hMpuPin = PIN_open(&MpuPinState, MpuPinConfig);
+    if (hMpuPin == NULL) {
+    	System_abort("Pin open failed!");
+    }
+
     Task_Params_init(&mainTaskParams);
     mainTaskParams.stackSize = STACKSIZE;
-    mainTaskParams.stack = &mainTaskStack;
+    mainTaskParams.stack = &taskStack;
     mainTaskParams.priority=2;
 
-    hMainTask = Task_create(mainTask, &mainTaskParams, NULL);
+    hMainTask = Task_create((Task_FuncPtr)sensorFxn, &mainTaskParams, NULL);
     if (hMainTask == NULL) {
+    	System_abort("Task create failed!");
+    }
+
+    /*Init Display Task */
+    Task_Params_init(&displayTaskParams);
+    displayTaskParams.stackSize = STACKSIZE;
+    displayTaskParams.stack = &displayTaskStack;
+    displayTaskParams.priority=3;
+
+    hDisplayTask = Task_create(displayTask, &displayTaskParams, NULL);
+    if (hDisplayTask == NULL) {
     	System_abort("Task create failed!");
     }
 
