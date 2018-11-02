@@ -4,6 +4,7 @@
 /* XDCtools Header files */
 #include <xdc/std.h>
 #include <stdio.h>
+#include <string.h>
 #include <xdc/runtime/System.h>
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
@@ -13,6 +14,7 @@
 #include <ti/drivers/I2C.h>
 #include <ti/drivers/PIN.h>
 #include <ti/drivers/pin/PINCC26XX.h>
+#include <ti/drivers/i2c/I2CCC26XX.h>
 
 #include <ti/mw/display/Display.h>
 
@@ -29,6 +31,7 @@
 /* Task Stacks */
 #define STACKSIZE 2048
 Char mainTaskStack[STACKSIZE];
+Char displayTaskStack[STACKSIZE];
 Char commTaskStack[STACKSIZE];
 
 /* MPU Global variables */
@@ -39,16 +42,15 @@ static PIN_Config MpuPinConfig[] = {
     PIN_TERMINATE
 };
 
-static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
-    .pinSDA = Board_I2C0_SDA1,
-    .pinSCL = Board_I2C0_SCL1
+const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
+	 .pinSDA = Board_I2C0_SDA1,
+	 .pinSCL = Board_I2C0_SCL1
 };
 
-/* JTKJ: Display */
 Display_Handle hDisplay;
 
 /*Enum for tracking movement state */
-typedef enum MovementState{
+enum MovementState{
 	Idle = 0,
 	StairsUp = 1,
 	StairsDown = 2,
@@ -87,8 +89,6 @@ Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
 	else{
 		state = Idle;
 	}
-
-	DrawMovementState();
 }
 
 
@@ -140,6 +140,11 @@ void sensorFxn(UArg arg0, UArg arg1) {
 	I2C_Params i2cMPUParams;
 
 	float ax, ay, az, gx, gy, gz;
+	float arx[50];
+	float ary[50];
+	float arz[50];
+	int i = 0;
+
 
 	I2C_Params_init(&i2cMPUParams);
 	i2cMPUParams.bitRate = I2C_400kHz;
@@ -181,9 +186,23 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 		I2C_close(i2cMPU);
 
-		printf("x: %f, y: %f, z: %f\n", ax, ay, az);
+		arx[i] = ax;
+		ary[i] = ay;
+		arz[i] = az;
+		i++;
 
-		Task_sleep(1000 / Clock_tickPeriod);
+		if (i == 50){
+			int j;
+			for (j = 0; j < 50; j++){
+				System_printf("%f;%f;%f\n", arx[j], ary[j], arz[j]);
+				if ((j + 1) % 5 == 0)){
+					System_flush();
+				}
+			}
+			System_flush();
+			i = 0;
+		}
+		Task_sleep(100000 / Clock_tickPeriod);
 	}
 }
 
@@ -232,10 +251,9 @@ Void displayTask(UArg arg0, UArg arg1) {
 
 
     while (1) {
+    	//DrawMovementState();
 
-		DrawMovementState();
-
-    	Task_sleep(100000 / Clock_tickPeriod);
+    	Task_sleep(1000000 / Clock_tickPeriod);
     }
 }
 
@@ -275,8 +293,8 @@ Int main(void) {
 
     Task_Params_init(&mainTaskParams);
     mainTaskParams.stackSize = STACKSIZE;
-    mainTaskParams.stack = &taskStack;
-    mainTaskParams.priority=2;
+    mainTaskParams.stack = &mainTaskStack;
+    mainTaskParams.priority=3;
 
     hMainTask = Task_create((Task_FuncPtr)sensorFxn, &mainTaskParams, NULL);
     if (hMainTask == NULL) {
@@ -287,7 +305,7 @@ Int main(void) {
     Task_Params_init(&displayTaskParams);
     displayTaskParams.stackSize = STACKSIZE;
     displayTaskParams.stack = &displayTaskStack;
-    displayTaskParams.priority=3;
+    displayTaskParams.priority=2;
 
     hDisplayTask = Task_create(displayTask, &displayTaskParams, NULL);
     if (hDisplayTask == NULL) {
