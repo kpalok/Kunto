@@ -20,7 +20,7 @@
 
 /* Board Header files */
 #include "Board.h"
-
+#include "Algorithm.h"
 #include "Graphics.h"
 
 /* JTKJ Header files */
@@ -82,6 +82,7 @@ PIN_Config cButton0[] = {
 
 Void DrawMovementState(void);
 
+
 Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
 	if (state < LiftDown){
 		state++;
@@ -134,15 +135,48 @@ Void commTask(UArg arg0, UArg arg1) {
 }
 
 
+void CalcState(float *x, float *y, float *z){
+	float xAvg, yAvg, zAvg, zVar;
+
+	xAvg = CalcAvg(x);
+	yAvg = CalcAvg(y);
+	zAvg = CalcAvg(z);
+	zVar = CalcVar(z, zAvg);
+
+	//Lift
+	if (0.0004 <= zVar && zVar < 0.009){
+		if (0.001 <= zVar < 0.009){
+			state = LiftUp;
+		}
+		else{
+			state = LiftDown;
+		}
+	}
+	//Stairs
+	else if (0.09 <= zVar){
+		if (0 <= xAvg && 0 <= yAvg){
+			state = StairsUp;
+		}
+		else{
+			state = StairsDown;
+		}
+	}
+	//Idle
+	else{
+		state = Idle;
+	}
+}
+
+
 void sensorFxn(UArg arg0, UArg arg1) {
-	// INTERFACE FOR MPU9250 SENSOR
+	// Interface for MPU9250
 	I2C_Handle i2cMPU;
 	I2C_Params i2cMPUParams;
 
 	float ax, ay, az, gx, gy, gz;
-	float arx[50];
-	float ary[50];
-	float arz[50];
+	float arx[10];
+	float ary[10];
+	float arz[10];
 	int i = 0;
 
 
@@ -191,17 +225,11 @@ void sensorFxn(UArg arg0, UArg arg1) {
 		arz[i] = az;
 		i++;
 
-		if (i == 50){
-			int j;
-			for (j = 0; j < 50; j++){
-				System_printf("%f;%f;%f\n", arx[j], ary[j], arz[j]);
-				if ((j + 1) % 5 == 0)){
-					System_flush();
-				}
-			}
-			System_flush();
+		if (i == 10){
+			CalcState(arx, ary, arz);
 			i = 0;
 		}
+
 		Task_sleep(100000 / Clock_tickPeriod);
 	}
 }
