@@ -13,8 +13,19 @@
 
 
 extern const tImage idleImage;
-extern const tImage stairsUpImage;
-extern const tImage stairsDownImage;
+
+extern const tImage stairsUpImage1;
+extern const tImage stairsUpImage2;
+extern const tImage stairsUpImage3;
+extern const tImage stairsUpImage4;
+extern const tImage stairsUpImage5;
+
+extern const tImage stairsDownImage1;
+extern const tImage stairsDownImage2;
+extern const tImage stairsDownImage3;
+extern const tImage stairsDownImage4;
+extern const tImage stairsDownImage5;
+
 extern const tImage liftUpImage;
 extern const tImage liftDownImage;
 

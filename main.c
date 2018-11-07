@@ -81,7 +81,9 @@ PIN_Config cButton0[] = {
     PIN_TERMINATE
 };
 
-Void DrawMovementState(void);
+Void DrawMovementState(uint8_t counter);
+tImage* SelectStairsUpImg(uint8_t counter);
+tImage* SelectStairsDownImg(uint8_t counter);
 
 
 Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
@@ -92,7 +94,6 @@ Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
 		state = Idle;
 	}
 }
-
 
 /* JTKJ: Handle for power button */
 Void powerButtonFxn(PIN_Handle handle, PIN_Id pinId) {
@@ -144,8 +145,8 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 	float ax, ay, az, gx, gy, gz;
 	double pres, temp;
-	float arx[50], ary[50], arz[50];
-	double arpres[50], artemp[50];
+	float arx[60], ary[60], arz[60];
+	double arpres[60];
 	int i = 0;
 
     I2C_Params_init(&i2cParams);
@@ -196,7 +197,7 @@ void sensorFxn(UArg arg0, UArg arg1) {
 		I2C_close(i2c);
 
 		arpres[i] = pres;
-		artemp[i] = temp;
+		//artemp[i] = temp;
 
 		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
 		if (i2cMPU == NULL) {
@@ -212,24 +213,25 @@ void sensorFxn(UArg arg0, UArg arg1) {
 		arz[i] = az;
 		i++;
 
-		if (i == 50){
+		if (i == 60){
 			int j;
-			for (j = 0; j < 50; j++){
-				System_printf("%f;%f;%f\n", arx[j], ary[j], arz[j]);
-				if ((j + 1) % 5 == 0)){
+			for (j = 0; j < 60; j++){
+				System_printf("mpu;%f;%f;%f\n", arx[j], ary[j], arz[j]);
+				System_printf("bmp;%f\n", arpres[j]);
+				if ((j + 1) % 2 == 0){
 					System_flush();
 				}
 			}
 			System_flush();
 			i = 0;
 
-		Task_sleep(100000 / Clock_tickPeriod);
 		}
+		Task_sleep(100000 / Clock_tickPeriod);
 	}
 }
 
 
-Void DrawMovementState(void){
+Void DrawMovementState(uint8_t counter){
 
 	if (hDisplay){
 		Display_clear(hDisplay);
@@ -242,10 +244,12 @@ Void DrawMovementState(void){
 				GrImageDraw(pContext, &idleImage, 0, 0);
 				break;
 			case StairsUp:
-				GrImageDraw(pContext, &stairsUpImage, 0, 0);
+				//tImage stairsUpImage = SelectStairsUpImg(counter);
+				GrImageDraw(pContext, SelectStairsUpImg(counter), 0, 0);
 			break;
 			case StairsDown:
-				GrImageDraw(pContext, &stairsDownImage, 0, 0);
+				//tImage stairsDownImage = SelectStairsDownImg(counter);
+				GrImageDraw(pContext, SelectStairsDownImg(counter), 0, 0);
 				break;
 			case LiftUp:
 				GrImageDraw(pContext, &liftUpImage, 0, 0);
@@ -260,6 +264,43 @@ Void DrawMovementState(void){
 	}
 }
 
+tImage* SelectStairsUpImg(uint8_t counter){
+
+	switch(counter){
+	case 1:
+		return (tImage*)&stairsUpImage1;
+	case 2:
+		return (tImage*)&stairsUpImage2;
+	case 3:
+		return (tImage*)&stairsUpImage3;
+	case 4:
+		return (tImage*)&stairsUpImage4;
+	case 5:
+		return (tImage*)&stairsUpImage5;
+	default:
+		return (tImage*)&stairsUpImage3;
+	}
+}
+
+tImage* SelectStairsDownImg(uint8_t counter){
+
+	switch(counter){
+	case 1:
+		return (tImage*)&stairsDownImage1;
+	case 2:
+		return (tImage*)&stairsDownImage2;
+	case 3:
+		return (tImage*)&stairsDownImage3;
+	case 4:
+		return (tImage*)&stairsDownImage4;
+	case 5:
+		return (tImage*)&stairsDownImage5;
+	default:
+		return (tImage*)&stairsDownImage3;
+	}
+}
+
+
 Void displayTask(UArg arg0, UArg arg1) {
 
     Display_Params displayParams;
@@ -271,11 +312,19 @@ Void displayTask(UArg arg0, UArg arg1) {
         System_abort("Error initializing Display\n");
     }
 
+    uint8_t counter = 1;
 
     while (1) {
-    	//DrawMovementState();
+    	counter++;
 
-    	Task_sleep(1000000 / Clock_tickPeriod);
+    	if ((counter % 2) == 0){
+			DrawMovementState(counter / 2);
+    	}
+
+    	if (counter == 10){
+    		counter = 1;
+    	}
+    	Task_sleep(100000 / Clock_tickPeriod);
     }
 }
 

@@ -7,6 +7,9 @@
 
 #include "Graphics.h"
 
+tImage SelectStairsUpImg(uint8_t counter);
+tImage SelectStairsDownImg(uint8_t counter);
+
 const uint32_t imgPalette[] = {0, 0xFFFFFF};
 
 
@@ -83,7 +86,7 @@ const tImage idleImage = {
  *
  * This bitmap from the file 'stairs_up4.png'
  */
-const unsigned char bitmap_stairs_up5[] = {
+const uint8_t bitmap_stairs_up5[] = {
   0x00,0x00,0x3F,0xF0,0x00,0x00, // ..................##########....................
   0x00,0x00,0x3F,0xF0,0x00,0x00, // ..................##########....................
   0x00,0x00,0x01,0xF0,0x00,0x00, // .......................#####....................
@@ -134,6 +137,15 @@ const unsigned char bitmap_stairs_up5[] = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsUpImage5 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_up5
+};
+
 
 /**
  * Made with Marlin Bitmap Converter
@@ -141,7 +153,7 @@ const unsigned char bitmap_stairs_up5[] = {
  *
  * This bitmap from the file 'stairs_up3.png'
  */
-const unsigned char bitmap_stairs_up4[] = {
+const uint8_t bitmap_stairs_up4[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -190,6 +202,15 @@ const unsigned char bitmap_stairs_up4[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
+};
+
+const tImage stairsUpImage4 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_up4
 };
 
 
@@ -251,13 +272,13 @@ const uint8_t bitmap_stairs_up3[] = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
-const tImage stairsUpImage = {
+const tImage stairsUpImage3 = {
 	.BPP = IMAGE_FMT_1BPP_UNCOMP,
 	.NumColors = 2,
 	.XSize = 47,
 	.YSize = 48,
 	.pPalette = imgPalette,
-	.pPixel = bitmap_stairs_up
+	.pPixel = bitmap_stairs_up3
 };
 
 /**
@@ -266,7 +287,7 @@ const tImage stairsUpImage = {
  *
  * This bitmap from the file 'stairs_up2.png'
  */
-const unsigned char bitmap_stairs_up2[] = {
+const uint8_t bitmap_stairs_up2[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -317,6 +338,15 @@ const unsigned char bitmap_stairs_up2[] = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsUpImage2 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_up2
+};
+
 
 /**
  * Made with Marlin Bitmap Converter
@@ -324,7 +354,7 @@ const unsigned char bitmap_stairs_up2[] = {
  *
  * This bitmap from the file 'stairs_up1.png'
  */
-const unsigned char bitmap_stairs_up1[] = {
+const uint8_t bitmap_stairs_up1[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -375,13 +405,22 @@ const unsigned char bitmap_stairs_up1[] = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsUpImage1 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_up1
+};
+
 /**
  * Made with Marlin Bitmap Converter
  * http://marlinfw.org/tools/u8glib/converter.html
  *
  * This bitmap from the file 'stairs_down1.png'
  */
-const unsigned char bitmap_0rqbft[] PROGMEM = {
+const uint8_t bitmap_stairs_down1[] = {
   0x00,0x00,0x00,0xF0,0x00,0x00, // ........................####....................
   0x00,0x00,0x01,0xE0,0x00,0x00, // .......................####.....................
   0x00,0x00,0x03,0xC0,0x00,0x00, // ......................####......................
@@ -432,6 +471,14 @@ const unsigned char bitmap_0rqbft[] PROGMEM = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsDownImage1 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_down1
+};
 
 /**
  * Made with Marlin Bitmap Converter
@@ -439,7 +486,7 @@ const unsigned char bitmap_0rqbft[] PROGMEM = {
  *
  * This bitmap from the file 'stairs_down2.png'
  */
-const unsigned char bitmap_yk13m[] PROGMEM = {
+const uint8_t bitmap_stairs_down2[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -490,14 +537,22 @@ const unsigned char bitmap_yk13m[] PROGMEM = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsDownImage2 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_down2
+};
+
 /**
  * Made with Marlin Bitmap Converter
  * http://marlinfw.org/tools/u8glib/converter.html
  *
  * This bitmap from the file 'stairs_down.png'
  */
-
-const uint8_t bitmap_stairs_down[] = {
+const uint8_t bitmap_stairs_down3[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -548,13 +603,13 @@ const uint8_t bitmap_stairs_down[] = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
-const tImage stairsDownImage = {
+const tImage stairsDownImage3 = {
 	.BPP = IMAGE_FMT_1BPP_UNCOMP,
 	.NumColors = 2,
 	.XSize = 47,
 	.YSize = 48,
 	.pPalette = imgPalette,
-	.pPixel = bitmap_stairs_down
+	.pPixel = bitmap_stairs_down3
 };
 
 
@@ -564,7 +619,7 @@ const tImage stairsDownImage = {
  *
  * This bitmap from the file 'stairs_down3.png'
  */
-const unsigned char bitmap_houaszc[] PROGMEM = {
+const uint8_t bitmap_stairs_down4[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -615,13 +670,22 @@ const unsigned char bitmap_houaszc[] PROGMEM = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsDownImage4 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_down4
+};
+
 /**
  * Made with Marlin Bitmap Converter
  * http://marlinfw.org/tools/u8glib/converter.html
  *
  * This bitmap from the file 'stairs_down4.png'
  */
-const unsigned char bitmap_l1r5ia[] PROGMEM = {
+const uint8_t bitmap_stairs_down5[] = {
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
   0x00,0x00,0x00,0x00,0x00,0x00, // ................................................
@@ -672,6 +736,14 @@ const unsigned char bitmap_l1r5ia[] PROGMEM = {
   0x00,0x00,0x00,0x00,0x00,0x00  // ................................................
 };
 
+const tImage stairsDownImage5 = {
+	.BPP = IMAGE_FMT_1BPP_UNCOMP,
+	.NumColors = 2,
+	.XSize = 47,
+	.YSize = 48,
+	.pPalette = imgPalette,
+	.pPixel = bitmap_stairs_down5
+};
 
 /**
  * Made with Marlin Bitmap Converter
