@@ -27,6 +27,7 @@
 #include "wireless/comm_lib.h"
 #include "wireless/address.h"
 #include "sensors/mpu9250.h"
+#include "sensors/bmp280.h"
 
 /* Task Stacks */
 #define STACKSIZE 2048
@@ -135,88 +136,74 @@ Void commTask(UArg arg0, UArg arg1) {
 }
 
 
-void CalcState(float *x, float *y, float *z){
-	float xAvg, yAvg, zAvg, zVar;
-
-	xAvg = CalcAvg(x);
-	yAvg = CalcAvg(y);
-	zAvg = CalcAvg(z);
-	zVar = CalcVar(z, zAvg);
-
-	//Lift
-	if (0.0004 <= zVar && zVar < 0.009){
-		if (0.001 <= zVar < 0.009){
-			state = LiftUp;
-		}
-		else{
-			state = LiftDown;
-		}
-	}
-	//Stairs
-	else if (0.09 <= zVar){
-		if (0 <= xAvg && 0 <= yAvg){
-			state = StairsUp;
-		}
-		else{
-			state = StairsDown;
-		}
-	}
-	//Idle
-	else{
-		state = Idle;
-	}
-}
-
-
 void sensorFxn(UArg arg0, UArg arg1) {
-	// Interface for MPU9250
-	I2C_Handle i2cMPU;
+	I2C_Handle i2cMPU; // Interface for MPU9250
 	I2C_Params i2cMPUParams;
+	I2C_Handle i2c;	//Interface for BMP280
+	I2C_Params i2cParams;
 
 	float ax, ay, az, gx, gy, gz;
-	float arx[10];
-	float ary[10];
-	float arz[10];
+	double pres, temp;
+	float arx[50], ary[50], arz[50];
+	double arpres[50], artemp[50];
 	int i = 0;
 
+    I2C_Params_init(&i2cParams);
+    i2cParams.bitRate = I2C_400kHz;
 
 	I2C_Params_init(&i2cMPUParams);
 	i2cMPUParams.bitRate = I2C_400kHz;
 	i2cMPUParams.custom = (uintptr_t)&i2cMPUCfg;
 
-	//MPU Open I2C
-	i2cMPU = I2C_open(Board_I2C, &i2cMPUParams);
+	i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU Open I2C
 	if (i2cMPU == NULL) {
 		System_abort("Error Initializing I2CMPU\n");
 	}
 
-
-	//MPU Power ON
-	PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_ON);
+	PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_ON); //MPU Power ON
 	Task_sleep(100000 / Clock_tickPeriod);
+
 	System_printf("MPU9250: Power ON\n");
 	System_flush();
 
-	// MPU9250 Setup and calibration
 	System_printf("MPU9250: Setup and calibration...\n");
 	System_flush();
 
-	mpu9250_setup(&i2cMPU);
+	mpu9250_setup(&i2cMPU);  // MPU9250 Setup and calibration
 
 	System_printf("MPU9250: Setup and calibration OK\n");
 	System_flush();
 
-	I2C_close(i2cMPU);
+	I2C_close(i2cMPU); //MPU9250 Close
+
+	i2c = I2C_open(Board_I2C, &i2cParams); //BMP280 Open
+	if (i2c == NULL) {
+		System_abort("Error Initializing I2C\n");
+	}
+
+	bmp280_setup(&i2c); //BMP280 SETUP
+
+	I2C_close(i2c); //BMP280 Close
 
 	while (1) {
-		//MPU Open I2C
-		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams);
+		i2c = I2C_open(Board_I2C, &i2cParams); //BMP280 Open I2C
+		if (i2c == NULL) {
+			System_abort("Error Initializing I2C\n");
+		}
+
+		bmp280_get_data(&i2c, &pres, &temp); //Get pres and temp values from sensor
+
+		I2C_close(i2c);
+
+		arpres[i] = pres;
+		artemp[i] = temp;
+
+		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
 		if (i2cMPU == NULL) {
 			System_abort("Error Initializing I2CMPU\n");
 		}
 
-		//Accelerometer values: ax,ay,az
-		mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
+		mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz); //Get accelerometer values from sensor
 
 		I2C_close(i2cMPU);
 
@@ -225,12 +212,19 @@ void sensorFxn(UArg arg0, UArg arg1) {
 		arz[i] = az;
 		i++;
 
-		if (i == 10){
-			CalcState(arx, ary, arz);
+		if (i == 50){
+			int j;
+			for (j = 0; j < 50; j++){
+				System_printf("%f;%f;%f\n", arx[j], ary[j], arz[j]);
+				if ((j + 1) % 5 == 0)){
+					System_flush();
+				}
+			}
+			System_flush();
 			i = 0;
-		}
 
 		Task_sleep(100000 / Clock_tickPeriod);
+		}
 	}
 }
 
