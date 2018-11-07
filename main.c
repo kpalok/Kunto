@@ -84,6 +84,8 @@ PIN_Config cButton0[] = {
 Void DrawMovementState(uint8_t counter);
 tImage* SelectStairsUpImg(uint8_t counter);
 tImage* SelectStairsDownImg(uint8_t counter);
+tImage* SelectLiftUpImg(uint8_t counter);
+tImage* SelectLiftDownImg(uint8_t counter);
 
 
 Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
@@ -244,18 +246,16 @@ Void DrawMovementState(uint8_t counter){
 				GrImageDraw(pContext, &idleImage, 0, 0);
 				break;
 			case StairsUp:
-				//tImage stairsUpImage = SelectStairsUpImg(counter);
 				GrImageDraw(pContext, SelectStairsUpImg(counter), 0, 0);
 			break;
 			case StairsDown:
-				//tImage stairsDownImage = SelectStairsDownImg(counter);
 				GrImageDraw(pContext, SelectStairsDownImg(counter), 0, 0);
 				break;
 			case LiftUp:
-				GrImageDraw(pContext, &liftUpImage, 0, 0);
+				GrImageDraw(pContext, SelectLiftUpImg(counter), 0, 0);
 				break;
 			case LiftDown:
-				GrImageDraw(pContext, &liftDownImage, 0, 0);
+				GrImageDraw(pContext, SelectLiftDownImg(counter), 0, 0);
 				break;
 			}
 
@@ -300,6 +300,41 @@ tImage* SelectStairsDownImg(uint8_t counter){
 	}
 }
 
+tImage* SelectLiftUpImg(uint8_t counter){
+
+	switch(counter){
+	case 1:
+		return (tImage*)&liftUpImage1;
+	case 2:
+		return (tImage*)&liftUpImage2;
+	case 3:
+		return (tImage*)&liftUpImage3;
+	case 4:
+		return (tImage*)&liftUpImage4;
+	case 5:
+		return (tImage*)&liftUpImage5;
+	default:
+		return (tImage*)&liftUpImage3;
+	}
+}
+
+tImage* SelectLiftDownImg(uint8_t counter){
+
+	switch(counter){
+	case 1:
+		return (tImage*)&liftDownImage1;
+	case 2:
+		return (tImage*)&liftDownImage2;
+	case 3:
+		return (tImage*)&liftDownImage3;
+	case 4:
+		return (tImage*)&liftDownImage4;
+	case 5:
+		return (tImage*)&liftDownImage5;
+	default:
+		return (tImage*)&liftDownImage3;
+	}
+}
 
 Void displayTask(UArg arg0, UArg arg1) {
 
@@ -317,14 +352,14 @@ Void displayTask(UArg arg0, UArg arg1) {
     while (1) {
     	counter++;
 
-    	if ((counter % 2) == 0){
+    	if ((counter % 4) == 0){
 			DrawMovementState(counter / 2);
     	}
 
-    	if (counter == 10){
+    	if (counter == 20){
     		counter = 1;
     	}
-    	Task_sleep(100000 / Clock_tickPeriod);
+    	Task_sleep(50000 / Clock_tickPeriod);
     }
 }
 

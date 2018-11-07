@@ -26,7 +26,16 @@ extern const tImage stairsDownImage3;
 extern const tImage stairsDownImage4;
 extern const tImage stairsDownImage5;
 
-extern const tImage liftUpImage;
-extern const tImage liftDownImage;
+extern const tImage liftUpImage1;
+extern const tImage liftUpImage2;
+extern const tImage liftUpImage3;
+extern const tImage liftUpImage4;
+extern const tImage liftUpImage5;
+
+extern const tImage liftDownImage1;
+extern const tImage liftDownImage2;
+extern const tImage liftDownImage3;
+extern const tImage liftDownImage4;
+extern const tImage liftDownImage5;
 
 #endif /* GRAPHICS_H_ */
