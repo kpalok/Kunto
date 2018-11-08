@@ -8,7 +8,8 @@
 #ifndef ALGORITHM_H_
 #define ALGORITHM_H_
 
-float CalcAvg(float *data);
-float CalcVar(float *data, float avg);
+#include <inttypes.h>
+
+uint8_t CalcState(float ax[], float ay[], float az[], double pres[], int count);
 
 #endif /* ALGORITHM_H_ */
