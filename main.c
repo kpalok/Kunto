@@ -50,6 +50,9 @@ const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 
 Display_Handle hDisplay;
 
+/*Global flag*/
+bool firstSecondOfMeasurement = true;
+
 /*Enum for tracking movement state */
 enum MovementState{
 	Idle = 0,
@@ -89,12 +92,7 @@ tImage* SelectLiftDownImg(uint8_t counter);
 
 
 Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
-	if (state < LiftDown){
-		state++;
-	}
-	else{
-		state = Idle;
-	}
+
 }
 
 /* JTKJ: Handle for power button */
@@ -146,9 +144,9 @@ void sensorFxn(UArg arg0, UArg arg1) {
 	I2C_Params i2cParams;
 
 	float ax, ay, az, gx, gy, gz;
-	double pres, temp;
-	float arx[60], ary[60], arz[60];
-	double arpres[60];
+	double pres, temperature;
+	float axSet[10], aySet[10], azSet[10];
+	double presSet[10], prevPresSet[10], temperatureSet[10];
 	int i = 0;
 
     I2C_Params_init(&i2cParams);
@@ -194,12 +192,14 @@ void sensorFxn(UArg arg0, UArg arg1) {
 			System_abort("Error Initializing I2C\n");
 		}
 
-		bmp280_get_data(&i2c, &pres, &temp); //Get pres and temp values from sensor
+		bmp280_get_data(&i2c, &pres, &temperature); //Get pres and temp values from sensor
 
 		I2C_close(i2c);
+		
+		prevPresSet[i] = pressureSet[i];
+		pressureSet[i] = pres / 100; // convert pressure unit from pascal to hehtopascal
 
-		arpres[i] = pres;
-		//artemp[i] = temp;
+		temperatureSet[i] = temperature;
 
 		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
 		if (i2cMPU == NULL) {
@@ -210,24 +210,21 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 		I2C_close(i2cMPU);
 
-		arx[i] = ax;
-		ary[i] = ay;
-		arz[i] = az;
+		axSet[i] = ax;
+		aySet[i] = ay;
+		azSet[i] = az;
 		i++;
 
-		if (i == 60){
-			int j;
-			for (j = 0; j < 60; j++){
-				System_printf("mpu;%f;%f;%f\n", arx[j], ary[j], arz[j]);
-				System_printf("bmp;%f\n", arpres[j]);
-				if ((j + 1) % 2 == 0){
-					System_flush();
-				}
-			}
-			System_flush();
+		// Dont canculate state from firs seconds data, because pressure has no referense set to last second
+		if (i == 10 & !firstSecondOfMeasurement){
+			state = CalcState(axSet, aySet, azSet, pressureSet, prevPresSet);
 			i = 0;
-
 		}
+		else if (i == 10 &){
+			firstSecondOfMeasurement = false;
+			i = 0;
+		}
+
 		Task_sleep(100000 / Clock_tickPeriod);
 	}
 }

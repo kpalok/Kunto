@@ -42,8 +42,9 @@ float CalcVar(float data[], float avg){
 }
 
 
-uint8_t CalcState(float ax[], float ay[], float az[], double pres[], double	previousPres){
-	float xMean, yMean, zMean, zVar, presMean, prevPresMean, dif;
+uint8_t CalcState(float ax[], float ay[], float az[], double pres[], double	previousPres[]){
+	float xMean, yMean, zMean, zVar;
+	double presMean, prevPresMean, difToLastPres;
 
 	xMean = CalcMeanFloat(ax);
 	yMean = CalcMeanFloat(ay);
@@ -52,28 +53,28 @@ uint8_t CalcState(float ax[], float ay[], float az[], double pres[], double	prev
 	prevPresMean = CalcMeanDouble(previousPres);
 	zVar = CalcVar(az, zMean);
 
-	//Calculate difference between pres of previous values and new values
-	dif = presMean - prevPresMean;
+	//Calculate difToLastPresference between pres of previous values and new values
+ 	difToLastPres = presMean - prevPresMean;
 
 	//Check which state user is in
 
 	//Lift Up
-	if ((0.0016 <= zVar && zVar <= 0.0043 & dif < 0) || (0.00025 <= zVar && zVar <= 0.0043 && dif < -0.07 && dif > -0.9))
+	if ((0.0016 <= zVar && zVar <= 0.0043 & difToLastPres < 0) || (0.00025 <= zVar && zVar <= 0.0043 && difToLastPres < -0.07 && difToLastPres > -0.9))
 	{
 		return 3;
 	}
 	//Lift Down
-	else if ((0.0015 <= zVar && zVar <= 0.0043 && dif > 0) || (0.00025 <= zVar && zVar <= 0.0043 && 0.051 < dif & dif < 0.9))
+	else if ((0.0015 <= zVar && zVar <= 0.0043 && difToLastPres > 0) || (0.00025 <= zVar && zVar <= 0.0043 && 0.051 < difToLastPres & difToLastPres < 0.9))
 	{
 		return 4;
 	}
 	//Stairs Up
-	else if ((0.05 < zVar || (0.09 < xMean || 0.08 < yMean)) && dif < 0)
+	else if ((0.05 < zVar || (0.09 < xMean || 0.08 < yMean)) && difToLastPres < 0)
 	{
 		return 1;
 	}
 	//Stairs Down
-	else if ((0.05 < zVar || (0.09 < xMean || 0.08 < yMean)) && dif > 0)
+	else if ((0.05 < zVar || (0.09 < xMean || 0.08 < yMean)) && difToLastPres > 0)
 	{
 		return 2;
 	}
