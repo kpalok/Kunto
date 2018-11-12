@@ -10,6 +10,14 @@
 
 #include <inttypes.h>
 
-uint8_t CalcState(float ax[], float ay[], float az[], double pres[], int count);
+typedef enum movementState{
+	Idle = 0,
+	StairsUp = 1,
+	StairsDown = 2,
+	LiftUp = 3,
+	LiftDown = 4
+} MovementState;
+
+MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[]);
 
 #endif /* ALGORITHM_H_ */

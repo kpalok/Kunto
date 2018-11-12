@@ -8,7 +8,6 @@
 
 #include "Algorithm.h"
 
-
 float CalcMeanFloat(float *data){
 	//Calculate mean for float values
 	int i;
@@ -42,7 +41,8 @@ float CalcVar(float data[], float avg){
 }
 
 
-uint8_t CalcState(float ax[], float ay[], float az[], double pres[], double	previousPres[]){
+MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[]){
+
 	float xMean, yMean, zMean, zVar;
 	double presMean, prevPresMean, difToLastPres;
 
@@ -61,27 +61,27 @@ uint8_t CalcState(float ax[], float ay[], float az[], double pres[], double	prev
 	//Lift Up
 	if ((0.0016 <= zVar && zVar <= 0.0043 & difToLastPres < 0) || (0.00025 <= zVar && zVar <= 0.0043 && difToLastPres < -0.07 && difToLastPres > -0.9))
 	{
-		return 3;
+		return LiftUp;
 	}
 	//Lift Down
 	else if ((0.0015 <= zVar && zVar <= 0.0043 && difToLastPres > 0) || (0.00025 <= zVar && zVar <= 0.0043 && 0.051 < difToLastPres & difToLastPres < 0.9))
 	{
-		return 4;
+		return LiftDown;
 	}
 	//Stairs Up
 	else if ((0.05 < zVar || (0.09 < xMean || 0.08 < yMean)) && difToLastPres < 0)
 	{
-		return 1;
+		return StairsUp;
 	}
 	//Stairs Down
 	else if ((0.05 < zVar || (0.09 < xMean || 0.08 < yMean)) && difToLastPres > 0)
 	{
-		return 2;
+		return StairsDown;
 	}
 	//Idle
 	else
 	{
-		return 0;
+		return Idle;
 	}
 }
 

@@ -53,16 +53,7 @@ Display_Handle hDisplay;
 /*Global flag*/
 bool firstSecondOfMeasurement = true;
 
-/*Enum for tracking movement state */
-enum MovementState{
-	Idle = 0,
-	StairsUp = 1,
-	StairsDown = 2,
-	LiftUp = 3,
-	LiftDown = 4
-};
-
-enum MovementState state = Idle;
+MovementState state = Idle;
 
 /* JTKJ: Pin Button1 configured as power button */
 static PIN_Handle hPowerButton;
@@ -196,8 +187,8 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 		I2C_close(i2c);
 		
-		prevPresSet[i] = pressureSet[i];
-		pressureSet[i] = pres / 100; // convert pressure unit from pascal to hehtopascal
+		prevPresSet[i] = presSet[i];
+		presSet[i] = pres / 100; // convert pressure unit from pascal to hehtopascal
 
 		temperatureSet[i] = temperature;
 
@@ -217,10 +208,10 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 		// Dont canculate state from firs seconds data, because pressure has no referense set to last second
 		if (i == 10 & !firstSecondOfMeasurement){
-			state = CalcState(axSet, aySet, azSet, pressureSet, prevPresSet);
+			state = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
 			i = 0;
 		}
-		else if (i == 10 &){
+		else if (i == 10){
 			firstSecondOfMeasurement = false;
 			i = 0;
 		}
