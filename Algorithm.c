@@ -42,22 +42,18 @@ float CalcVar(float data[], float avg){
 }
 
 
-uint8_t CalcState(float ax[], float ay[], float az[], double pres[], int count){
-	float xMean, yMean, zMean, zVar, presMean, prevPres, dif;
+uint8_t CalcState(float ax[], float ay[], float az[], double pres[], double	previousPres){
+	float xMean, yMean, zMean, zVar, presMean, prevPresMean, dif;
 
 	xMean = CalcMeanFloat(ax);
 	yMean = CalcMeanFloat(ay);
 	zMean = CalcMeanFloat(az);
 	presMean = CalcMeanDouble(pres);
+	prevPresMean = CalcMeanDouble(previousPres);
 	zVar = CalcVar(az, zMean);
 
-	//Check if it's first set of data
-	if (count == 1){
-		prevPres = presMean;
-	}
 	//Calculate difference between pres of previous values and new values
-	dif = presMean - prevPres;
-	prevPres = presMean;
+	dif = presMean - prevPresMean;
 
 	//Check which state user is in
 

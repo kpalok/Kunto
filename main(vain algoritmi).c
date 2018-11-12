@@ -85,12 +85,7 @@ Void DrawMovementState(void);
 
 
 Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId){
-	if (state < LiftDown){
-		state++;
-	}
-	else{
-		state = Idle;
-	}
+
 }
 
 
@@ -143,10 +138,11 @@ void sensorFxn(UArg arg0, UArg arg1) {
 	I2C_Params i2cParams;
 
 	float ax, ay, az, gx, gy, gz;
-	double pres, heat;
-	float arx[50], ary[50], arz[50];
-	double arpres[50], arheat[50];
-	int i = 0, firstcount = 1;
+	double pres, temperature;
+	float axSet[10], aySet[10], azSet[10];
+	double presSet[10], prevPresSet[10], temperatureSet[10];
+	bool firstSecondOfMeasurement = true;
+	int i = 0;
 
     I2C_Params_init(&i2cParams);
     i2cParams.bitRate = I2C_400kHz;
@@ -191,12 +187,14 @@ void sensorFxn(UArg arg0, UArg arg1) {
 			System_abort("Error Initializing I2C\n");
 		}
 
-		bmp280_get_data(&i2c, &pres, &heat); //Get pres and temp values from sensor
+		bmp280_get_data(&i2c, &pres, &temperature); //Get pres and temp values from sensor
 
 		I2C_close(i2c);
+		
+		prevPresSet[i] = pressureSet[i];
+		pressureSet[i] = pres / 100;
 
-		arpres[i] = pres / 100;
-		arheat[i] = heat;
+		temperatureSet[i] = temperature;
 
 		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
 		if (i2cMPU == NULL) {
@@ -207,15 +205,15 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 		I2C_close(i2cMPU);
 
-		arx[i] = ax;
-		ary[i] = ay;
-		arz[i] = az;
+		axSet[i] = ax;
+		aySet[i] = ay;
+		azSet[i] = az;
 		i++;
 
-		if (i == 10){
-			state = CalcState(arx, ary, arz, arpres, firstcount);
+		// Dont canculate state from firs seconds data, because pressure has no referense set to last second
+		if (i == 10 & !firstSecondOfMeasurement){
+			state = CalcState(axSet, aySet, azSet, pressureSet, prevPresSet);
 			i = 0;
-			firstcount = 0;
 		}
 
 		Task_sleep(100000 / Clock_tickPeriod);
