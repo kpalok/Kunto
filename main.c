@@ -136,8 +136,8 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 	float ax, ay, az, gx, gy, gz;
 	double pres, temperature;
-	float axSet[10], aySet[10], azSet[10];
-	double presSet[10], prevPresSet[10], temperatureSet[10];
+	float axSet[15], aySet[15], azSet[15];
+	double presSet[15], prevPresSet[15], temperatureSet[15];
 	int i = 0;
 
     I2C_Params_init(&i2cParams);
@@ -207,11 +207,11 @@ void sensorFxn(UArg arg0, UArg arg1) {
 		i++;
 
 		// Dont canculate state from firs seconds data, because pressure has no referense set to last second
-		if (i == 10 & !firstSecondOfMeasurement){
+		if (i == 15 & !firstSecondOfMeasurement){
 			state = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
 			i = 0;
 		}
-		else if (i == 10){
+		else if (i == 15){
 			firstSecondOfMeasurement = false;
 			i = 0;
 		}
@@ -350,6 +350,7 @@ Void displayTask(UArg arg0, UArg arg1) {
     	Task_sleep(50000 / Clock_tickPeriod);
     }
 }
+
 
 Int main(void) {
 
