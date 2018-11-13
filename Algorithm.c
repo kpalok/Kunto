@@ -60,22 +60,22 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 	//Check which state user is in
 
 	//Lift Up
-	if ((0.0016 <= zVar && zVar <= 0.0043 & difToLastPres < 0) || (0.00025 <= zVar && zVar <= 0.0043 && difToLastPres < -0.07 && difToLastPres > -0.9))
+	if (0.00016 <= zVar && zVar <= 0.0043 && zMean < -0.07 && difToLastPres < -0.055 && difToLastPres > -0.9)
 	{
 		return LiftUp;
 	}
 	//Lift Down
-	else if ((0.0015 <= zVar && zVar <= 0.0043 && difToLastPres > 0) || (0.00025 <= zVar && zVar <= 0.0043 && 0.051 < difToLastPres & difToLastPres < 0.9))
+	else if (0.00025 <= zVar && zVar <= 0.0045 && zMean < -0.07 && 0.055 < difToLastPres && difToLastPres < 0.9)
 	{
 		return LiftDown;
 	}
 	//Stairs Up
-	else if (((0.08 < yMean && yMean < 0.3) || (0.08 < xMean && xMean < 0.3) || (yVar > 0.08)) && 0.06 < zVar && zMean < -0.75 && difToLastPres < 0)
+	else if (((0.01 < yVar && yVar < 0.12) || (0.06 < yMean && yMean < 0.3) || (0.07 < xMean && xMean < 0.3)) && 0.06 < zVar && zMean < -0.45 && difToLastPres < -0.008)
 	{
 		return StairsUp;
 	}
 	//Stairs Down
-	else if (((0.08 < yMean && yMean < 0.3) || (0.08 < xMean && xMean < 0.3) || ( yVar > 0.08)) && 0.06 < zVar && zMean < -0.75 && difToLastPres > 0)
+	else if (((0.01 < yVar && yVar < 0.12)|| (0.06 < yMean && yMean < 0.3) || (0.07 < xMean && xMean < 0.3)) && 0.06 < zVar && zMean < -0.45 && difToLastPres > 0.008)
 	{
 		return StairsDown;
 	}
