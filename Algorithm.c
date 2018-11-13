@@ -64,7 +64,7 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 		return LiftUp;
 	}
 	//Lift Down
-	else if ((0.0015 <= zVar && zVar <= 0.0043 && difToLastPres > 0) || (0.00025 <= zVar && zVar <= 0.0043 && 0.051 < difToLastPres & difToLastPres < 0.9))
+	else if ((0.0015 <= zVar && zVar <= 0.0043 && difToLastPres > 0) || (0.00025 <= zVar && zVar <= 0.0043 && 0.051 < difToLastPres && difToLastPres < 0.9))
 	{
 		return LiftDown;
 	}
