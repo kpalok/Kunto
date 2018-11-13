@@ -43,7 +43,7 @@ float CalcVar(float data[], float avg){
 
 MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[]){
 
-	float xMean, yMean, zMean, zVar;
+	float xMean, yMean, zMean, yVar, zVar;
 	double presMean, prevPresMean, difToLastPres;
 
 	xMean = CalcMeanFloat(ax);
@@ -51,6 +51,7 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 	zMean = CalcMeanFloat(az);
 	presMean = CalcMeanDouble(pres);
 	prevPresMean = CalcMeanDouble(previousPres);
+	yVar = CalcVar(ay, yMean);
 	zVar = CalcVar(az, zMean);
 
 	//Calculate difToLastPresference between pres of previous values and new values
@@ -69,12 +70,12 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 		return LiftDown;
 	}
 	//Stairs Up
-	else if (0.06 < zVar && zMean < -0.75 && 0.04 < xMean && xMean < 0.3 && difToLastPres < 0)
+	else if (((0.08 < yMean && yMean < 0.3) || (0.08 < xMean && xMean < 0.3) || (yVar > 0.08)) && 0.06 < zVar && zMean < -0.75 && difToLastPres < 0)
 	{
 		return StairsUp;
 	}
 	//Stairs Down
-	else if (0.06 < zVar && zMean < -0.75 && 0.04 < yMean && yMean < 0.3 && difToLastPres > 0)
+	else if (((0.08 < yMean && yMean < 0.3) || (0.08 < xMean && xMean < 0.3) || ( yVar > 0.08)) && 0.06 < zVar && zMean < -0.75 && difToLastPres > 0)
 	{
 		return StairsDown;
 	}
