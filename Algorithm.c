@@ -12,10 +12,10 @@ float CalcMeanFloat(float *data){
 	//Calculate mean for float values
 	int i;
 	float sum = 0;
-	for (i = 0; i < 15; i++){
+	for (i = 0; i < 20; i++){
 		sum += data[i];
 	}
-	return sum / 15;
+	return sum / 20;
 }
 
 
@@ -23,10 +23,10 @@ double CalcMeanDouble(double data[]){
 	//Calculate mean for double values
 	int i;
 	double sum = 0;
-	for (i = 0; i < 15; i++){
+	for (i = 0; i < 20; i++){
 		sum += data[i];
 	}
-	return sum / 15;
+	return sum / 20;
 }
 
 
@@ -34,10 +34,10 @@ float CalcVar(float data[], float avg){
 	//Calculate variance
 	int i;
 	float sum = 0;
-	for (i = 0; i < 15; i++){
+	for (i = 0; i < 20; i++){
 		sum += (data[i] - avg)*(data[i] - avg);
 	}
-	return sum / 14;
+	return sum / 19;
 }
 
 
@@ -60,22 +60,22 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 	//Check which state user is in
 
 	//Lift Up
-	if (0.00016 <= zVar && zVar <= 0.0043 && zMean < -0.07 && difToLastPres < -0.055 && difToLastPres > -0.9)
+	if (0.0006 <= zVar && zVar <= 0.0043 && difToLastPres < -0.08 && difToLastPres)
 	{
 		return LiftUp;
 	}
 	//Lift Down
-	else if (0.00025 <= zVar && zVar <= 0.0045 && zMean < -0.07 && 0.055 < difToLastPres && difToLastPres < 0.9)
+	else if (0.00025 <= zVar && zVar <= 0.0045 && 0.06 < difToLastPres && difToLastPres)
 	{
 		return LiftDown;
 	}
 	//Stairs Up
-	else if (((0.01 < yVar && yVar < 0.12) || (0.06 < yMean && yMean < 0.3) || (0.07 < xMean && xMean < 0.3)) && 0.06 < zVar && zMean < -0.45 && difToLastPres < -0.008)
+	else if (0.07 < xMean && xMean < 0.4 && 0.07 < zVar && zMean < -0.58 && difToLastPres < -0.03)
 	{
 		return StairsUp;
 	}
 	//Stairs Down
-	else if (((0.01 < yVar && yVar < 0.12)|| (0.06 < yMean && yMean < 0.3) || (0.07 < xMean && xMean < 0.3)) && 0.06 < zVar && zMean < -0.45 && difToLastPres > 0.008)
+	else if (((0.04 < yMean && yMean < 0.3) || (0.045 < xMean && xMean < 0.25)) && 0.07 < zVar && zMean < -0.58 && difToLastPres > 0.032)
 	{
 		return StairsDown;
 	}
@@ -85,4 +85,3 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 		return Idle;
 	}
 }
-
