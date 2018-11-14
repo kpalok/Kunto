@@ -60,12 +60,12 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 	//Check which state user is in
 
 	//Lift Up
-	if (0.00016 <= zVar && zVar <= 0.0043 && difToLastPres < -0.055 && difToLastPres > -1)
+	if (0.00016 <= zVar && zVar <= 0.0043 && difToLastPres < -0.06 && difToLastPres)
 	{
 		return LiftUp;
 	}
 	//Lift Down
-	else if (0.00025 <= zVar && zVar <= 0.0045 && 0.055 < difToLastPres && difToLastPres < 1)
+	else if (0.00025 <= zVar && zVar <= 0.0045 && 0.06 < difToLastPres && difToLastPres)
 	{
 		return LiftDown;
 	}
