@@ -14,6 +14,8 @@
 
 extern const tImage idleImage;
 
+extern const tImage envelopeImage;
+
 extern const tImage stairsUpImage1;
 extern const tImage stairsUpImage2;
 extern const tImage stairsUpImage3;
