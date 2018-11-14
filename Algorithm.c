@@ -12,10 +12,10 @@ float CalcMeanFloat(float *data){
 	//Calculate mean for float values
 	int i;
 	float sum = 0;
-	for (i = 0; i < 15; i++){
+	for (i = 0; i < 10; i++){
 		sum += data[i];
 	}
-	return sum / 15;
+	return sum / 10;
 }
 
 
@@ -23,10 +23,10 @@ double CalcMeanDouble(double data[]){
 	//Calculate mean for double values
 	int i;
 	double sum = 0;
-	for (i = 0; i < 15; i++){
+	for (i = 0; i < 10; i++){
 		sum += data[i];
 	}
-	return sum / 15;
+	return sum / 10;
 }
 
 
@@ -34,10 +34,10 @@ float CalcVar(float data[], float avg){
 	//Calculate variance
 	int i;
 	float sum = 0;
-	for (i = 0; i < 15; i++){
+	for (i = 0; i < 10; i++){
 		sum += (data[i] - avg)*(data[i] - avg);
 	}
-	return sum / 14;
+	return sum / 9;
 }
 
 
@@ -85,4 +85,3 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 		return Idle;
 	}
 }
-
