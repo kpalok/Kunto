@@ -31,7 +31,7 @@
 
 /* Task Stacks */
 #define STACKSIZE 2048
-Char mainTaskStack[STACKSIZE];
+Char sensorTaskStack[STACKSIZE];
 Char displayTaskStack[STACKSIZE];
 Char commTaskStack[STACKSIZE];
 
@@ -59,6 +59,7 @@ typedef enum windowState {
 
 bool firstSecondOfMeasurement = true;
 bool walkedStairs = false;
+bool windowChanged = false;
 WindowState windowState = Measurement;
 MovementState movementState = Idle;
 
@@ -109,6 +110,8 @@ Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId) {
 		firstSecondOfMeasurement = true;
 		windowState = Measurement;
 	}
+
+	windowChanged = true;
 }
 
 /* JTKJ: Handle for power button */
@@ -139,16 +142,14 @@ Void commTask(UArg arg0, UArg arg1) {
 
 		if (GetRXFlag()) {
 
-			System_printf("RFXFlag %i\n", GetRXFlag());
-
 			memset(previousReceivedMessage, 0, 16);
+
 			Receive6LoWPAN(&previousSenderAddress, previousReceivedMessage, 16);
 
 			// if message is received, change state so user is notified
 			windowState = MessageWaiting;
 
 		}
-
 	}
 }
 
@@ -163,8 +164,10 @@ void sensorFxn(UArg arg0, UArg arg1) {
 	float ax, ay, az, gx, gy, gz;
 	double pres, temperature;
 	float axSet[20], aySet[20], azSet[20];
-	double presSet[20], prevPresSet[20], temperatureSet[20];
+	double presSet[20], prevPresSet[20];
 	int i = 0;
+
+	MovementState previousState = Idle;
 
     I2C_Params_init(&i2cParams);
     i2cParams.bitRate = I2C_400kHz;
@@ -203,7 +206,8 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 	I2C_close(i2c); //BMP280 Close
 
-	while (1) {
+	while (windowState != Communication) {
+
 		i2c = I2C_open(Board_I2C, &i2cParams); //BMP280 Open I2C
 		if (i2c == NULL) {
 			System_abort("Error Initializing I2C\n");
@@ -215,9 +219,12 @@ void sensorFxn(UArg arg0, UArg arg1) {
 		
 		prevPresSet[i] = presSet[i];
 		presSet[i] = pres / 100; // convert pressure unit from pascal to hehtopascal
-		globalPres = pres / 100;
 
+		globalPres = pres / 100;
 		globalTemperature = ((temperature - 32) * 5) / 9; // convert temperature unit from fahrenheit to celsius
+
+		System_printf("Global pres: %4.3f\n", globalPres);
+		System_printf("Global temp: %2.2f\n", globalTemperature);
 
 		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
 		if (i2cMPU == NULL) {
@@ -235,7 +242,7 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 		// Dont canculate state from firs seconds data, because pressure has no referense set to last second
 		if (i == 20 & !firstSecondOfMeasurement){
-			state = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
+			movementState = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
 			i = 0;
 		}
 		else if (i == 20){
@@ -243,18 +250,27 @@ void sensorFxn(UArg arg0, UArg arg1) {
 			i = 0;
 		}
 
+		if ((previousState == StairsUp | previousState == StairsDown) &
+				movementState == Idle){
+
+			walkedStairs = true;
+		}
+
+		previousState = movementState;
+
 		Task_sleep(100000 / Clock_tickPeriod);
 	}
 }
 
 
-void DrawBmpSensorData(){
+Void DrawBmpSensorData(){
 
 	if (hDisplay){
-		Display_print0(hDisplay, 1, 8, "Temp:");
-		Display_print1(hDisplay, 3, 8, "%f", globalPres);
-		Display_print0(hDisplay, 5, 8, "Pres:");
-		Display_print1(hDisplay, 7, 8, "%f", globalTemperature);
+
+		Display_print0(hDisplay, 0, 8, "Temp:");
+		Display_print1(hDisplay, 1, 8, "%2.2f", globalTemperature);
+		Display_print0(hDisplay, 3, 8, "Pres:");
+		Display_print1(hDisplay, 4, 8, "%4.2f", globalPres);
 	}
 }
 
@@ -263,30 +279,25 @@ void DrawBmpSensorData(){
 Void DrawCommunicationLog() {
 
 	if (hDisplay) {
-		Display_clear(hDisplay);
 
-		tContext *pContext = DisplayExt_getGrlibContext(hDisplay);
+		Display_print0(hDisplay, 0, 0, "Previous");
+		Display_print0(hDisplay, 1, 0, "received");
+		Display_print0(hDisplay, 2, 0, "message:");
+		if (previousSenderAddress > 0) {
+			Display_print1(hDisplay, 3, 0, "From: %x", previousSenderAddress);
+			Display_print1(hDisplay, 5, 0, "%s", previousReceivedMessage);
+		}
+		else {
+			Display_print0(hDisplay, 4, 0, "No message");
+		}
 
-		if (pContext) {
-			Display_print0(hDisplay, 0, 0, "Previous");
-			Display_print0(hDisplay, 1, 0, "received message");
-			Display_print0(hDisplay, 2, 0, "message");
-			if (previousSenderAddress > 0) {
-				Display_print1(hDisplay, 2, 0, "From: %x", previousSenderAddress);
-				Display_print1(hDisplay, 4, 0, "%s", previousReceivedMessage);
-			}
-			else {
-				Display_print0(hDisplay, 4, 0, "No message");
-			}
-
-			Display_print0(hDisplay, 6, 0, "Previous");
-			Display_print0(hDisplay, 7, 0, "sent message");
-			if (previousSenderAddress > 0) {
-				Display_print1(hDisplay, 9, 0, "%s", previousSentMessage);
-			}
-			else {
-				Display_print0(hDisplay, 9, 0, "No message");
-			}
+		Display_print0(hDisplay, 7, 0, "Previous");
+		Display_print0(hDisplay, 8, 0, "sent message:");
+		if (previousSenderAddress > 0) {
+			Display_print1(hDisplay, 10, 0, "%s", previousSentMessage);
+		}
+		else {
+			Display_print0(hDisplay, 10, 0, "No message");
 		}
 	}
 }
@@ -419,23 +430,23 @@ Void displayTask(UArg arg0, UArg arg1) {
 	uint8_t secondCounter = 0;
 
 	while (1) {
+		// Display needs to be cleared only when window is changed
+		if (windowChanged){
+			Display_clear(hDisplay);
+			windowChanged = false;
+		}
 
 		if (windowState != Communication) {
-			frameCounter++;
 
+			//DrawBmpSensorData();
 			DrawMovementState(frameCounter);
 
 			// reset animation by reseting counter every second
 			if (frameCounter == 5) {
 				secondCounter++;
-				frameCounter = 1;
+				frameCounter = 0;
 			}
 
-			if (secondCounter == 2) {
-				// clear possible text
-				Display_clearLines(hDisplay, 8, 15);
-				secondCounter = 0;
-			}
 			// see if messages are waiting and draw notifier
 			if (windowState == MessageWaiting) {
 				DrawNotificationIcon();
@@ -448,12 +459,15 @@ Void displayTask(UArg arg0, UArg arg1) {
 				char sendStr[16];
 				sprintf(sendStr, "Walked stairs!");
 
-				Send6LoWPAN(0x0235, (uint8_t*)sendStr, 16);
+				Send6LoWPAN(0xFFFF, (uint8_t*)sendStr, 16);
 				StartReceive6LoWPAN();
 
+				strcpy(previousSentMessage, sendStr);
 				secondCounter = 0;
 				walkedStairs = false;
 			}
+
+			frameCounter++;
 		}
 		else {
 			DrawCommunicationLog();
@@ -466,8 +480,8 @@ Void displayTask(UArg arg0, UArg arg1) {
 
 Int main(void) {
 
-	Task_Handle hMainTask;
-	Task_Params mainTaskParams;
+	Task_Handle hSensorTask;
+	Task_Params sensorTaskParams;
 	Task_Handle hDisplayTask;
 	Task_Params displayTaskParams;
 	Task_Handle hCommTask;
@@ -498,13 +512,13 @@ Int main(void) {
 		System_abort("Pin open failed!");
 	}
 
-	Task_Params_init(&mainTaskParams);
-	mainTaskParams.stackSize = STACKSIZE;
-	mainTaskParams.stack = &mainTaskStack;
-	mainTaskParams.priority = 3;
+	Task_Params_init(&sensorTaskParams);
+	sensorTaskParams.stackSize = STACKSIZE;
+	sensorTaskParams.stack = &sensorTaskStack;
+	sensorTaskParams.priority = 3;
 
-	hMainTask = Task_create((Task_FuncPtr)sensorFxn, &mainTaskParams, NULL);
-	if (hMainTask == NULL) {
+	hSensorTask = Task_create((Task_FuncPtr)sensorFxn, &sensorTaskParams, NULL);
+	if (hSensorTask == NULL) {
 		System_abort("Task create failed!");
 	}
 
