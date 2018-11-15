@@ -59,6 +59,7 @@ typedef enum windowState {
 
 bool firstSecondOfMeasurement = true;
 bool walkedStairs = false;
+bool tookLift = false;
 bool windowChanged = false;
 WindowState windowState = Measurement;
 MovementState movementState = Idle;
@@ -147,8 +148,10 @@ Void commTask(UArg arg0, UArg arg1) {
 			Receive6LoWPAN(&previousSenderAddress, previousReceivedMessage, 16);
 
 			// if message is received, change state so user is notified
-			windowState = MessageWaiting;
-
+			// if window isn't in communication state
+			if (windowState == Measurement){
+				windowState = MessageWaiting;
+			}
 		}
 	}
 }
@@ -206,57 +209,62 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 	I2C_close(i2c); //BMP280 Close
 
-	while (windowState != Communication) {
+	while (1) {
 
-		i2c = I2C_open(Board_I2C, &i2cParams); //BMP280 Open I2C
-		if (i2c == NULL) {
-			System_abort("Error Initializing I2C\n");
+		if (windowState != Communication){
+
+			i2c = I2C_open(Board_I2C, &i2cParams); //BMP280 Open I2C
+			if (i2c == NULL) {
+				System_abort("Error Initializing I2C\n");
+			}
+
+			bmp280_get_data(&i2c, &pres, &temperature); //Get pres and temp values from sensor
+
+			I2C_close(i2c);
+
+			prevPresSet[i] = presSet[i];
+			presSet[i] = pres / 100; // convert pressure unit from pascal to hehtopascal
+
+			globalPres = pres / 100;
+			globalTemperature = ((temperature - 32) * 5) / 9; // convert temperature unit from fahrenheit to celsius
+
+			i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
+			if (i2cMPU == NULL) {
+				System_abort("Error Initializing I2CMPU\n");
+			}
+
+			mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz); //Get accelerometer values from sensor
+
+			I2C_close(i2cMPU);
+
+			axSet[i] = ax;
+			aySet[i] = ay;
+			azSet[i] = az;
+			i++;
+
+			// Dont canculate state from firs seconds data, because pressure has no referense set to last second
+			if (i == 20 & !firstSecondOfMeasurement){
+				movementState = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
+				i = 0;
+			}
+			else if (i == 20){
+				firstSecondOfMeasurement = false;
+				i = 0;
+			}
+
+			if ((previousState == StairsUp | previousState == StairsDown) &
+					movementState == Idle){
+
+				walkedStairs = true;
+			}
+			else if ((previousState == LiftUp | previousState == LiftDown) &
+					movementState == Idle){
+
+				tookLift = true;
+			}
+
+			previousState = movementState;
 		}
-
-		bmp280_get_data(&i2c, &pres, &temperature); //Get pres and temp values from sensor
-
-		I2C_close(i2c);
-		
-		prevPresSet[i] = presSet[i];
-		presSet[i] = pres / 100; // convert pressure unit from pascal to hehtopascal
-
-		globalPres = pres / 100;
-		globalTemperature = ((temperature - 32) * 5) / 9; // convert temperature unit from fahrenheit to celsius
-
-		System_printf("Global pres: %4.3f\n", globalPres);
-		System_printf("Global temp: %2.2f\n", globalTemperature);
-
-		i2cMPU = I2C_open(Board_I2C, &i2cMPUParams); //MPU9250 Open I2C
-		if (i2cMPU == NULL) {
-			System_abort("Error Initializing I2CMPU\n");
-		}
-
-		mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz); //Get accelerometer values from sensor
-
-		I2C_close(i2cMPU);
-
-		axSet[i] = ax;
-		aySet[i] = ay;
-		azSet[i] = az;
-		i++;
-
-		// Dont canculate state from firs seconds data, because pressure has no referense set to last second
-		if (i == 20 & !firstSecondOfMeasurement){
-			movementState = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
-			i = 0;
-		}
-		else if (i == 20){
-			firstSecondOfMeasurement = false;
-			i = 0;
-		}
-
-		if ((previousState == StairsUp | previousState == StairsDown) &
-				movementState == Idle){
-
-			walkedStairs = true;
-		}
-
-		previousState = movementState;
 
 		Task_sleep(100000 / Clock_tickPeriod);
 	}
@@ -266,11 +274,25 @@ void sensorFxn(UArg arg0, UArg arg1) {
 Void DrawBmpSensorData(){
 
 	if (hDisplay){
+		tContext *pContext = DisplayExt_getGrlibContext(hDisplay);
 
-		Display_print0(hDisplay, 0, 8, "Temp:");
-		Display_print1(hDisplay, 1, 8, "%2.2f", globalTemperature);
-		Display_print0(hDisplay, 3, 8, "Pres:");
-		Display_print1(hDisplay, 4, 8, "%4.2f", globalPres);
+		if (pContext){
+
+			GrStringDraw(pContext, "Temp:", -1, 48, 0, true);
+
+			char temperatureStr[8];
+			sprintf(temperatureStr, "%.2f", globalTemperature);
+
+			GrStringDraw(pContext, temperatureStr, -1, 48, 10, true);
+
+			GrStringDraw(pContext, "Pres:", -1, 48, 30, true);
+
+			char presStr[8];
+			sprintf(presStr, "%.2f", globalPres);
+
+			GrStringDraw(pContext, presStr, -1, 48, 40, true);
+		}
+
 	}
 }
 
@@ -285,7 +307,7 @@ Void DrawCommunicationLog() {
 		Display_print0(hDisplay, 2, 0, "message:");
 		if (previousSenderAddress > 0) {
 			Display_print1(hDisplay, 3, 0, "From: %x", previousSenderAddress);
-			Display_print1(hDisplay, 5, 0, "%s", previousReceivedMessage);
+			Display_print0(hDisplay, 5, 0, previousReceivedMessage);
 		}
 		else {
 			Display_print0(hDisplay, 4, 0, "No message");
@@ -294,7 +316,7 @@ Void DrawCommunicationLog() {
 		Display_print0(hDisplay, 7, 0, "Previous");
 		Display_print0(hDisplay, 8, 0, "sent message:");
 		if (previousSenderAddress > 0) {
-			Display_print1(hDisplay, 10, 0, "%s", previousSentMessage);
+			Display_print0(hDisplay, 10, 0, previousSentMessage);
 		}
 		else {
 			Display_print0(hDisplay, 10, 0, "No message");
@@ -420,6 +442,8 @@ Void displayTask(UArg arg0, UArg arg1) {
 	displayParams.lineClearMode = DISPLAY_CLEAR_BOTH;
 	Display_Params_init(&displayParams);
 
+	bool popUpShowing = false;
+
 	hDisplay = Display_open(Display_Type_LCD, &displayParams);
 
 	if (hDisplay == NULL) {
@@ -438,7 +462,7 @@ Void displayTask(UArg arg0, UArg arg1) {
 
 		if (windowState != Communication) {
 
-			//DrawBmpSensorData();
+			DrawBmpSensorData();
 			DrawMovementState(frameCounter);
 
 			// reset animation by reseting counter every second
@@ -447,24 +471,53 @@ Void displayTask(UArg arg0, UArg arg1) {
 				frameCounter = 0;
 			}
 
+			// reset second counter every two seconds, and clear popup if it's shown
+			if (secondCounter == 2 & popUpShowing){
+				Display_clearLines(hDisplay, 7, 15);
+				popUpShowing = false;
+				secondCounter = 0;
+			}
+			else if (secondCounter == 2){
+				secondCounter = 0;
+			}
+
 			// see if messages are waiting and draw notifier
 			if (windowState == MessageWaiting) {
 				DrawNotificationIcon();
 			}
-			// draw and send message if stairs were used
+			// draw and send encouraging message if stairs were used
 			if (walkedStairs) {
-				Display_print0(hDisplay, 9, 0, "Good");
-				Display_print0(hDisplay, 10, 0, "job!");
+				Display_print0(hDisplay, 9, 1, "Good");
+				Display_print0(hDisplay, 10, 1, "job!");
+				// raise popup shown flag
+				popUpShowing = true;
 
-				char sendStr[16];
-				sprintf(sendStr, "Walked stairs!");
+				char sendStr[9];
+				sprintf(sendStr, "In stairs");
 
-				Send6LoWPAN(0xFFFF, (uint8_t*)sendStr, 16);
+				Send6LoWPAN(0xFFFF, sendStr, strlen(sendStr));
 				StartReceive6LoWPAN();
 
 				strcpy(previousSentMessage, sendStr);
 				secondCounter = 0;
 				walkedStairs = false;
+			}
+			else if (tookLift){
+
+				Display_print0(hDisplay, 9, 1, "Stop");
+				Display_print0(hDisplay, 10, 1, "slacking!");
+				// raise popup shown flag
+				popUpShowing = true;
+
+				char sendStr[7];
+				sprintf(sendStr, "In lift");
+
+				Send6LoWPAN(0xFFFF, sendStr, strlen(sendStr));
+				StartReceive6LoWPAN();
+
+				strcpy(previousSentMessage, sendStr);
+				secondCounter = 0;
+				tookLift = false;
 			}
 
 			frameCounter++;
