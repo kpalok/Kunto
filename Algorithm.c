@@ -3,60 +3,72 @@
  *
  *  Created on: 6.11.2018
  *      Author: Joona Halkola
+ *      		Kalle Palokangas
  */
 
 
 #include "Algorithm.h"
 
-float CalcMeanFloat(float *data){
-	//Calculate mean for float values
+/*Calculate mean for float values*/
+float CalcMeanFloat(float data[], int elementCount){
+
 	int i;
 	float sum = 0;
-	for (i = 0; i < 20; i++){
+
+	for (i = 0; i < elementCount; i++){
+
 		sum += data[i];
 	}
-	return sum / 20;
+
+	return sum / elementCount;
 }
 
+/*Calculate mean for double values*/
+double CalcMeanDouble(double data[], int elementCount){
 
-double CalcMeanDouble(double data[]){
-	//Calculate mean for double values
 	int i;
 	double sum = 0;
-	for (i = 0; i < 20; i++){
+
+	for (i = 0; i < elementCount; i++){
+
 		sum += data[i];
 	}
-	return sum / 20;
+
+	return sum / elementCount;
 }
 
+/*Calculate variance*/
+float CalcVar(float data[], float avg, int elementCount){
 
-float CalcVar(float data[], float avg){
-	//Calculate variance
 	int i;
 	float sum = 0;
-	for (i = 0; i < 20; i++){
+
+	for (i = 0; i < elementCount; i++){
+
 		sum += (data[i] - avg)*(data[i] - avg);
 	}
-	return sum / 19;
+
+	return sum / (elementCount - 1);
 }
 
-
-MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[]){
+/* Returns movement state based on measured data set.
+ * Assumes all arrays are of same length (defined by element count).*/
+MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[], int elementCount){
 
 	float xMean, yMean, zMean, zVar;
 	double presMean, prevPresMean, difToLastPres;
 
-	xMean = CalcMeanFloat(ax);
-	yMean = CalcMeanFloat(ay);
-	zMean = CalcMeanFloat(az);
-	presMean = CalcMeanDouble(pres);
-	prevPresMean = CalcMeanDouble(previousPres);
-	zVar = CalcVar(az, zMean);
+	xMean = CalcMeanFloat(ax, elementCount);
+	yMean = CalcMeanFloat(ay, elementCount);
+	zMean = CalcMeanFloat(az, elementCount);
 
-	//Calculate difToLastPresference between pres of previous values and new values
+	presMean = CalcMeanDouble(pres, elementCount);
+	prevPresMean = CalcMeanDouble(previousPres, elementCount);
+
+	zVar = CalcVar(az, zMean, elementCount);
+
+	//Calculate difference to last measured pressure mean
  	difToLastPres = presMean - prevPresMean;
-
-	//Check which state user is in
 
 	//Lift Up
 	if (0.0005 <= zVar & zVar <= 0.005 & difToLastPres < -0.06)

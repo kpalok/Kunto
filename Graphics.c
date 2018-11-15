@@ -2,7 +2,10 @@
  * Graphics.c
  *
  *  Created on: Oct 18, 2018
- *      Author: Kalle
+ *      Author: Kalle Palokangas
+ *      		Joona Halkola
+*
+*    Contains definitions for constant tImages
  */
 
 #include "Graphics.h"

@@ -2,7 +2,8 @@
  * Graphics.h
  *
  *  Created on: Oct 18, 2018
- *      Author: Kalle
+ *      Author: Kalle Palokangas
+ *      		Joona Halkola
  */
 
 #ifndef GRAPHICS_H_

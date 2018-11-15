@@ -3,6 +3,7 @@
  *
  *  Created on: 6.11.2018
  *      Author: Joona Halkola
+ *      		Kalle Palokangas
  */
 
 #ifndef ALGORITHM_H_
@@ -18,6 +19,6 @@ typedef enum movementState{
 	LiftDown = 4
 } MovementState;
 
-MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[]);
+MovementState CalcState(float ax[], float ay[], float az[], double pres[], double previousPres[], int elementCount);
 
 #endif /* ALGORITHM_H_ */

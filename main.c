@@ -1,5 +1,8 @@
 /*
  *  ======== main.c ========
+ *
+ *  Kalle Palokangas
+ *  Joona Halkola
  */
 /* XDCtools Header files */
 #include <xdc/std.h>
@@ -51,6 +54,8 @@ const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 Display_Handle hDisplay;
 
 /*State variables*/
+#define MEASUREMENT_SET_SIZE 20
+
 typedef enum windowState {
 	Measurement = 0,
 	MessageWaiting = 1,
@@ -61,11 +66,14 @@ bool firstSecondOfMeasurement = true;
 bool walkedStairs = false;
 bool tookLift = false;
 bool windowChanged = false;
+
 WindowState windowState = Measurement;
 MovementState movementState = Idle;
 
+/*Measurement variables that are used to draw data on screen*/
 double globalPres, globalTemperature;
 
+/*Variables to store communication history*/
 uint16_t previousSenderAddress;
 char previousReceivedMessage[16], previousSentMessage[16];
 
@@ -92,13 +100,13 @@ PIN_Config cButton0[] = {
 
 Void DrawNotificationIcon();
 Void DrawCommunicationLog();
-Void DrawMovementState(uint8_t counter);
+Void DrawMovementState(uint8_t frameCounter);
 void DrawBmpSensorData();
 
-tImage* SelectStairsUpImg(uint8_t counter);
-tImage* SelectStairsDownImg(uint8_t counter);
-tImage* SelectLiftUpImg(uint8_t counter);
-tImage* SelectLiftDownImg(uint8_t counter);
+tImage* SelectStairsUpImg(uint8_t frameCounter);
+tImage* SelectStairsDownImg(uint8_t frameCounter);
+tImage* SelectLiftUpImg(uint8_t frameCounter);
+tImage* SelectLiftDownImg(uint8_t frameCounter);
 
 
 Void stateButtonFxn(PIN_Handle handle, PIN_Id pinId) {
@@ -142,13 +150,14 @@ Void commTask(UArg arg0, UArg arg1) {
 	while (1) {
 
 		if (GetRXFlag()) {
-
+			// clear previously stored message
 			memset(previousReceivedMessage, 0, 16);
 
 			Receive6LoWPAN(&previousSenderAddress, previousReceivedMessage, 16);
 
-			// if message is received, change state so user is notified
-			// if window isn't in communication state
+			/*If message is received and screen is in measurement state, change state to
+			 * notify user about unread message.
+			 * If screen is already in communication state, message will update on screen.*/
 			if (windowState == Measurement){
 				windowState = MessageWaiting;
 			}
@@ -166,8 +175,8 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 	float ax, ay, az, gx, gy, gz;
 	double pres, temperature;
-	float axSet[20], aySet[20], azSet[20];
-	double presSet[20], prevPresSet[20];
+	float axSet[MEASUREMENT_SET_SIZE], aySet[MEASUREMENT_SET_SIZE], azSet[MEASUREMENT_SET_SIZE];
+	double presSet[MEASUREMENT_SET_SIZE], prevPresSet[MEASUREMENT_SET_SIZE];
 	int i = 0;
 
 	MovementState previousState = Idle;
@@ -211,6 +220,7 @@ void sensorFxn(UArg arg0, UArg arg1) {
 
 	while (1) {
 
+		// Stop data reading when window is viewing message log
 		if (windowState != Communication){
 
 			i2c = I2C_open(Board_I2C, &i2cParams); //BMP280 Open I2C
@@ -242,12 +252,12 @@ void sensorFxn(UArg arg0, UArg arg1) {
 			azSet[i] = az;
 			i++;
 
-			// Dont canculate state from firs seconds data, because pressure has no referense set to last second
-			if (i == 20 & !firstSecondOfMeasurement){
-				movementState = CalcState(axSet, aySet, azSet, presSet, prevPresSet);
+			// Dont calculate state from first seconds data, because pressure has no referense set to last second
+			if (i == MEASUREMENT_SET_SIZE & !firstSecondOfMeasurement){
+				movementState = CalcState(axSet, aySet, azSet, presSet, prevPresSet, MEASUREMENT_SET_SIZE);
 				i = 0;
 			}
-			else if (i == 20){
+			else if (i == MEASUREMENT_SET_SIZE){
 				firstSecondOfMeasurement = false;
 				i = 0;
 			}
@@ -270,7 +280,7 @@ void sensorFxn(UArg arg0, UArg arg1) {
 	}
 }
 
-
+/*Draws temperature and pressure measurements in real time*/
 Void DrawBmpSensorData(){
 
 	if (hDisplay){
@@ -296,8 +306,7 @@ Void DrawBmpSensorData(){
 	}
 }
 
-
-
+/*Draws log with previously received and sent messages*/
 Void DrawCommunicationLog() {
 
 	if (hDisplay) {
@@ -324,6 +333,7 @@ Void DrawCommunicationLog() {
 	}
 }
 
+/*Draws icon that notifies about unread received message*/
 Void DrawNotificationIcon() {
 
 	if (hDisplay) {
@@ -335,27 +345,29 @@ Void DrawNotificationIcon() {
 	}
 }
 
-Void DrawMovementState(uint8_t counter) {
+Void DrawMovementState(uint8_t frameCounter) {
 
 	if (hDisplay) {
 		tContext *pContext = DisplayExt_getGrlibContext(hDisplay);
 
 		if (pContext) {
+			// switch through movement states and draw corresponding image
+
 			switch (movementState) {
 			case Idle:
 				GrImageDraw(pContext, &idleImage, 0, 0);
 				break;
 			case StairsUp:
-				GrImageDraw(pContext, SelectStairsUpImg(counter), 0, 0);
+				GrImageDraw(pContext, SelectStairsUpImg(frameCounter), 0, 0);
 				break;
 			case StairsDown:
-				GrImageDraw(pContext, SelectStairsDownImg(counter), 0, 0);
+				GrImageDraw(pContext, SelectStairsDownImg(frameCounter), 0, 0);
 				break;
 			case LiftUp:
-				GrImageDraw(pContext, SelectLiftUpImg(counter), 0, 0);
+				GrImageDraw(pContext, SelectLiftUpImg(frameCounter), 0, 0);
 				break;
 			case LiftDown:
-				GrImageDraw(pContext, SelectLiftDownImg(counter), 0, 0);
+				GrImageDraw(pContext, SelectLiftDownImg(frameCounter), 0, 0);
 				break;
 			}
 
@@ -364,9 +376,10 @@ Void DrawMovementState(uint8_t counter) {
 	}
 }
 
-tImage* SelectStairsUpImg(uint8_t counter) {
+/*Return frame defined by counter for stairs up animation*/
+tImage* SelectStairsUpImg(uint8_t frameCounter) {
 
-	switch (counter) {
+	switch (frameCounter) {
 	case 1:
 		return (tImage*)&stairsUpImage1;
 	case 2:
@@ -382,9 +395,10 @@ tImage* SelectStairsUpImg(uint8_t counter) {
 	}
 }
 
-tImage* SelectStairsDownImg(uint8_t counter) {
+/*Return frame defined by counter for stairs down animation*/
+tImage* SelectStairsDownImg(uint8_t frameCounter) {
 
-	switch (counter) {
+	switch (frameCounter) {
 	case 1:
 		return (tImage*)&stairsDownImage1;
 	case 2:
@@ -400,9 +414,10 @@ tImage* SelectStairsDownImg(uint8_t counter) {
 	}
 }
 
-tImage* SelectLiftUpImg(uint8_t counter) {
+/*Return frame defined by counter for lift up animation*/
+tImage* SelectLiftUpImg(uint8_t frameCounter) {
 
-	switch (counter) {
+	switch (frameCounter) {
 	case 1:
 		return (tImage*)&liftUpImage1;
 	case 2:
@@ -418,9 +433,10 @@ tImage* SelectLiftUpImg(uint8_t counter) {
 	}
 }
 
-tImage* SelectLiftDownImg(uint8_t counter) {
+/*Return frame defined by counter for lift down animation*/
+tImage* SelectLiftDownImg(uint8_t frameCounter) {
 
-	switch (counter) {
+	switch (frameCounter) {
 	case 1:
 		return (tImage*)&liftDownImage1;
 	case 2:
@@ -442,18 +458,18 @@ Void displayTask(UArg arg0, UArg arg1) {
 	displayParams.lineClearMode = DISPLAY_CLEAR_BOTH;
 	Display_Params_init(&displayParams);
 
-	bool popUpShowing = false;
-
 	hDisplay = Display_open(Display_Type_LCD, &displayParams);
 
 	if (hDisplay == NULL) {
 		System_abort("Error initializing Display\n");
 	}
 
+	bool popUpShowing = false;
 	uint8_t frameCounter = 1;
 	uint8_t secondCounter = 0;
 
 	while (1) {
+
 		// Display needs to be cleared only when window is changed
 		if (windowChanged){
 			Display_clear(hDisplay);
@@ -465,7 +481,7 @@ Void displayTask(UArg arg0, UArg arg1) {
 			DrawBmpSensorData();
 			DrawMovementState(frameCounter);
 
-			// reset animation by reseting counter every second
+			// reset animation by reseting frame counter every second
 			if (frameCounter == 5) {
 				secondCounter++;
 				frameCounter = 0;
@@ -485,6 +501,7 @@ Void displayTask(UArg arg0, UArg arg1) {
 			if (windowState == MessageWaiting) {
 				DrawNotificationIcon();
 			}
+
 			// draw and send encouraging message if stairs were used
 			if (walkedStairs) {
 				Display_print0(hDisplay, 9, 1, "Good");
@@ -565,6 +582,7 @@ Int main(void) {
 		System_abort("Pin open failed!");
 	}
 
+	/*Init sensor reading task*/
 	Task_Params_init(&sensorTaskParams);
 	sensorTaskParams.stackSize = STACKSIZE;
 	sensorTaskParams.stack = &sensorTaskStack;
@@ -588,6 +606,7 @@ Int main(void) {
 
 	Init6LoWPAN();
 
+	/* Init communication task*/
 	Task_Params_init(&commTaskParams);
 	commTaskParams.stackSize = STACKSIZE;
 	commTaskParams.stack = &commTaskStack;
