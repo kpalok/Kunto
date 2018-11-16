@@ -71,22 +71,22 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
  	difToLastPres = presMean - prevPresMean;
 
 	//Lift Up
-	if (0.0003 <= zVar & zVar <= 0.005 & difToLastPres < -0.05)
+	if (0.00025 <= zVar & zVar <= 0.006 & difToLastPres < -0.047)
 	{
 		return LiftUp;
 	}
 	//Lift Down
-	else if (0.00025 <= zVar & zVar <= 0.005 & difToLastPres > 0.05)
+	else if (0.00025 <= zVar & zVar <= 0.006 & difToLastPres > 0.047)
 	{
 		return LiftDown;
 	}
 	//Stairs Up
-	else if ((yMean < 0.25 | xMean < 0.2) & 0.07 < zVar & difToLastPres < -0.015)
+	else if ((yMean < 0.3 | 0.05 < xMean & xMean < 0.4) && 0.1 < zVar && zMean < -0.65 & difToLastPres < -0.011)
 	{
 		return StairsUp;
 	}
 	//Stairs Down
-	else if ((yMean < 0.25 | xMean < 0.2) & 0.07 < zVar & difToLastPres > 0.015)
+	else if ((yMean < 0.3 | 0.05 < xMean & xMean < 0.4) && 0.1 < zVar && zMean < -0.65 & difToLastPres > -0.011)
 	{
 		return StairsDown;
 	}
