@@ -82,7 +82,7 @@ MovementState CalcState(float ax[], float ay[], float az[], double pres[], doubl
 	}
 	//Stairs Up
 	else if (((0.07 < abs(xMean) && abs(xMean) < 0.35) || (abs(yMean) < 0.065 && abs(yMean) < 0.25)) && 0.085 < zVar && difToLastPres < -0.017)
-	{ö
+	{
 		return StairsUp;
 	}
 	//Stairs Down
