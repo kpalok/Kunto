@@ -54,7 +54,7 @@ const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 Display_Handle hDisplay;
 
 /*State variables*/
-#define MEASUREMENT_SET_SIZE 20
+#define MEASUREMENT_SET_SIZE 15
 
 typedef enum windowState {
 	Measurement = 0,
